@@ -1,8 +1,19 @@
-create database bank;
-use bank;
-create table clients (
-    accId int,
-    name varchar(255),
-    password varchar(255),
-    balance int
-);
+-- create database bank;
+-- use bank;
+-- create table clients (
+--     accId int,
+--     name varchar(255),
+--     password varchar(255),
+--     balance int
+-- );
+-- insert into clients
+-- values (45634764, 'Akshay', 1234, 1000);
+-- select *
+-- from clients
+-- where name = "Akshay" and password = "1234";
+-- delete from clients where accId = 45634664;
+-- alter table clients
+-- modify balance double;
+-- ALTER TABLE clients
+-- modify balance varchar(255) not null;
+-- describe clients;
