@@ -1,9 +1,10 @@
-package Bank.Client;
+package Client;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
-import Bank.Account.Account;
+import Account.Account;
+
 
 public interface ClientIF extends Remote {
     public void withdraw(Account account) throws RemoteException;

@@ -1,4 +1,4 @@
-package Bank.LoadBalancer;
+package LoadBalancer;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
@@ -10,4 +10,8 @@ public interface LoadBalancerIF extends Remote {
     public int requestServer() throws RemoteException;
 
     public void freeServer(int port) throws RemoteException;
+
+    public void lockAccount(int accId) throws RemoteException;
+
+    public void unlockAccount(int accId) throws RemoteException;
 }

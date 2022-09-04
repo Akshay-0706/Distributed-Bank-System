@@ -1,60 +1,46 @@
-package Bank.Server;
+package Server;
 
 import java.io.IOException;
 import java.rmi.AccessException;
 import java.rmi.RemoteException;
-import java.rmi.registry.LocateRegistry;
-import java.rmi.registry.Registry;
-import java.rmi.server.UnicastRemoteObject;
+import java.util.Scanner;
+
+import Path.Path;
 
 public class ServerCreater {
+
     public static void main(String[] args) {
-        int port = Integer.parseInt(args[0]);
+        Scanner sc = new Scanner(System.in);
+        System.setProperty("java.rmi.server.hostname", "127.0.0.1");
+        System.out.println("\nWelcome!\n");
 
+        String command = "java \"@include.argfile\" " + Path.getServerDriver();
+
+        System.out.print("No of servers: ");
+        int count = sc.nextInt();
+
+        if (count > 10) {
+            System.out.println(
+                    "Better not to create more than 10 servers for now!\nMax 10 servers are allowed.\nServer count is decreased to 10.");
+            count = 10;
+        }
+        System.out.print("Enter " + count + " Port numbers: ");
         try {
-            createServer(port);
+            for (int i = 0; i < count; i++) {
+                final int port = sc.nextInt();
 
-            Server server = new Server();
-            UnicastRemoteObject.unexportObject(server, true);
-            ServerIF serverIF = (ServerIF) UnicastRemoteObject.exportObject(server, 0);
-            Registry registry = LocateRegistry.getRegistry(port);
-            registry.rebind(String.valueOf(port), serverIF);
+                Runtime.getRuntime().exec("cmd /c start cmd.exe /K \"" + command + " " + port + "\"");
+            }
+
         } catch (AccessException e) {
             e.printStackTrace();
         } catch (RemoteException e) {
             e.printStackTrace();
+        } catch (IOException e) {
         }
+
+        sc.close();
+        System.out.println();
     }
 
-    public static void createServer(int port) {
-        Thread t = new Thread(new Runnable() {
-
-            public void run() {
-                try {
-                    if (port == 3000) {
-                        System.out
-                                .println("Port 3000 is already assigned to Load Balancer, please use another!");
-                        return;
-                    }
-                    System.out.println("Trying to create server on port " + port + "...");
-                    LocateRegistry.createRegistry(port);
-                } catch (RemoteException e) {
-                    try {
-                        System.out.println("Port already in use, trying to reconnect...");
-                        LocateRegistry.getRegistry(port);
-                    } catch (RemoteException e1) {
-                        System.out.println("Unable to reconnect to port: " + e.getMessage());
-                    }
-                }
-                System.setProperty("java.rmi.server.hostname", "127.0.0.1");
-                System.out.println("Server running on port " + port + "...");
-                try {
-                    System.in.read();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-        t.start();
-    }
 }

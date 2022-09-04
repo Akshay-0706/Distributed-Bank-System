@@ -1,4 +1,4 @@
-package Bank.Account;
+package Account;
 
 import java.rmi.*;
 

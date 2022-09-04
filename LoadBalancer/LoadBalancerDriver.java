@@ -1,4 +1,4 @@
-package Bank.LoadBalancer;
+package LoadBalancer;
 
 import java.io.IOException;
 import java.rmi.AccessException;
@@ -38,7 +38,6 @@ public class LoadBalancerDriver {
             Registry registry = LocateRegistry.getRegistry(3000);
             registry.rebind("load", loadBalancerIF);
             loadBalancerIF.setServers(ports, portsAreBusy);
-            System.out.print("Load Balancer is now bounded with name 'load'\n\n");
         } catch (AccessException e) {
             e.printStackTrace();
         } catch (RemoteException e) {

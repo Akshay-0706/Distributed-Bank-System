@@ -1,14 +1,20 @@
-package Bank.Server;
+package Server;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 
-import Bank.Account.Account;
+import Account.Account;
 
 public interface ServerIF extends Remote {
-    public int createAccount(Account account) throws RemoteException;
+    public void notifyLogOut(int accId) throws RemoteException;
 
-    public Account loginAccount(int accId, String password) throws RemoteException;
+    public void notifyStartConnection() throws RemoteException;
+
+    public void notifyStopConnection() throws RemoteException;
+
+    public int createAccount(String username, String password, double balance) throws RemoteException;
+
+    public String[] loginAccount(int accId, String password) throws RemoteException;
 
     public void deleteAccount(int accId, String password) throws RemoteException;
 
@@ -16,7 +22,5 @@ public interface ServerIF extends Remote {
 
     public void deposit(int accId, double money, boolean isTransfered) throws RemoteException;
 
-    public void transfer(int senderId, int receiverId, double money) throws RemoteException;
-
-    public double getBalance(int accId) throws RemoteException;
+    public boolean transfer(int senderId, int receiverId, double money) throws RemoteException;
 }

@@ -9,9 +9,14 @@
             "port": 3306,
             "driver": "MySQL",
             "name": "MySQL",
-            "database": "Bank",
-            "username": "mysql",
+            "database": "bank",
+            "username": "sqluser",
             "password": "password"
         }
+    ],
+    "java.project.referencedLibraries": [
+        "lib/**/*.jar",
+        "json.jar",
+        "mysql.jar"
     ]
 }

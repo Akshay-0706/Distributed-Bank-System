@@ -1,8 +1,9 @@
-package Bank.Account;
+package Account;
 
 import java.rmi.*;
+import java.rmi.server.UnicastRemoteObject;
 
-public class Account implements AccountIF {
+public class Account extends UnicastRemoteObject implements AccountIF {
     private  int accId;
     private double balance;
     private String username, password;

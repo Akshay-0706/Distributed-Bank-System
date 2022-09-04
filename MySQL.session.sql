@@ -17,3 +17,5 @@
 -- ALTER TABLE clients
 -- modify balance varchar(255) not null;
 -- describe clients;
+-- delete from transactions;
+delete from accounts;
