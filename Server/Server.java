@@ -8,12 +8,13 @@ import java.util.Base64;
 import java.util.Random;
 import java.util.Base64.Encoder;
 // import java.util.Base64.Decoder;
-import Account.Account;
 import Log.Log;
 
 public class Server extends UnicastRemoteObject implements ServerIF {
 
-    private int port;
+    private int port, time, leader;
+    private long instance;
+    private ServerMasterIF serverMasterIF;
     private String className = "com.mysql.cj.jdbc.Driver";
     private String url = "jdbc:mysql://localhost:3306/bank?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC";
     private String username = "sqluser";
@@ -21,15 +22,21 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     Connection connection;
     Statement statement;
 
-    public Server(int port) throws RemoteException {
+    public Server(int port, int time, long instance, ServerMasterIF serverMasterIF) throws RemoteException {
         super();
         this.port = port;
-        Log.serverLog(port, "Server is online");
+        this.time = time;
+        this.instance = instance;
+        this.serverMasterIF = serverMasterIF;
+
+        Log.serverLog(port, this.time, instance, "Server is online");
+
+        timer();
     }
 
     @Override
     public void notifyLogOut(int accId) throws RemoteException {
-        Log.serverLog(port, accId + ": Logged out");
+        Log.serverLog(port, this.time, instance, accId + ": Logged out");
     }
 
     public void notifyStartConnection() throws RemoteException {
@@ -37,7 +44,7 @@ public class Server extends UnicastRemoteObject implements ServerIF {
             Class.forName(className);
             connection = DriverManager.getConnection(url, username, password);
             statement = connection.createStatement();
-            Log.serverLog(port, "Server is busy");
+            Log.serverLog(port, this.time, instance, "Server is busy");
         } catch (SQLException e) {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
@@ -50,10 +57,27 @@ public class Server extends UnicastRemoteObject implements ServerIF {
         try {
             statement.close();
             connection.close();
-            Log.serverLog(port, "Server is free");
+            Log.serverLog(port, this.time, instance, "Server is free");
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    private void timer() {
+        Thread t = new Thread(new Runnable() {
+            public void run() {
+                while (true) {
+                    System.out.println(time);
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    time++;
+                }
+            }
+        });
+        t.start();
     }
 
     public static void main(String[] args) {
@@ -74,7 +98,11 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     }
 
     @Override
-    public int createAccount(String username, String password, double balance) throws RemoteException {
+    public int createAccount(String username, String password, double balance, int time) throws RemoteException {
+        if (this.time < time) {
+            this.time = time;
+            serverMasterIF.notifyTimeChanged();
+        }
         Random random = new Random();
         int accId = random.nextInt(900000000) + 100000000;
         try {
@@ -85,21 +113,25 @@ public class Server extends UnicastRemoteObject implements ServerIF {
                     + "', "
                     + balance + ");";
             statement.executeUpdate(query);
-            Log.serverLog(port, accId + ": Account created");
+            Log.serverLog(port, this.time, instance, accId + ": Account created");
 
             System.out.println("Account created successfully!");
         } catch (SQLException e) {
             System.out.println("Account ID already exists, creating another one...");
-            return createAccount(username, password, balance);
+            return createAccount(username, password, balance, time);
         }
         return accId;
     }
 
     @Override
-    public String[] loginAccount(int accId, String password) throws RemoteException {
+    public String[] loginAccount(int accId, String password, int time) throws RemoteException {
+        if (this.time < time) {
+            this.time = time;
+            serverMasterIF.notifyTimeChanged();
+        }
         String credentials[] = null;
         try {
-            Log.serverLog(port, accId + ": Login requested");
+            Log.serverLog(port, this.time, instance, accId + ": Login requested");
             System.out.println("Account login request granted...");
 
             String query = "select * from accounts where accId = '" + accId + "' and password = '" + encoder(password)
@@ -112,10 +144,10 @@ public class Server extends UnicastRemoteObject implements ServerIF {
                 credentials = new String[2];
                 credentials[0] = resultSet.getString("name");
                 credentials[1] = String.valueOf(resultSet.getDouble("balance"));
-                Log.serverLog(port, accId + ": Logged in");
+                Log.serverLog(port, this.time, instance, accId + ": Logged in");
                 System.out.println("Logged in successfully!");
             } else {
-                Log.serverLog(port, accId + ": Login failed");
+                Log.serverLog(port, this.time, instance, accId + ": Login failed");
                 System.out.println("Account does not exists!");
             }
 
@@ -126,14 +158,18 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     }
 
     @Override
-    public void deleteAccount(int accId, String password) throws RemoteException {
-        if (loginAccount(accId, password) != null) {
+    public void deleteAccount(int accId, String password, int time) throws RemoteException {
+        if (this.time < time) {
+            this.time = time;
+            serverMasterIF.notifyTimeChanged();
+        }
+        if (loginAccount(accId, password, time) != null) {
             try {
                 System.out.println("Account deletion request granted...");
 
                 String query = "delete from accounts where accId = " + accId + ";";
                 statement.executeUpdate(query);
-                Log.serverLog(port, accId + ": Account deleted");
+                Log.serverLog(port, this.time, instance, accId + ": Account deleted");
                 System.out.println("Account deleted successfully!");
                 // connection.close();
             } catch (SQLException e) {
@@ -143,7 +179,11 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     }
 
     @Override
-    public void withdraw(int accId, double money, boolean isToBeTransfered) throws RemoteException {
+    public void withdraw(int accId, double money, boolean isToBeTransfered, int time) throws RemoteException {
+        if (this.time < time) {
+            this.time = time;
+            serverMasterIF.notifyTimeChanged();
+        }
         try {
             System.out.println("Money withdraw request granted...");
 
@@ -164,7 +204,11 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     }
 
     @Override
-    public void deposit(int accId, double money, boolean isTransfered) throws RemoteException {
+    public void deposit(int accId, double money, boolean isTransfered, int time) throws RemoteException {
+        if (this.time < time) {
+            this.time = time;
+            serverMasterIF.notifyTimeChanged();
+        }
         try {
             System.out.println("Money deposit request granted...");
             String query = "update accounts set balance = " + (getBalance(accId) + money) + " where accId = "
@@ -184,10 +228,14 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     }
 
     @Override
-    public boolean transfer(int senderId, int receiverId, double money) throws RemoteException {
+    public boolean transfer(int senderId, int receiverId, double money, int time) throws RemoteException {
+        if (this.time < time) {
+            this.time = time;
+            serverMasterIF.notifyTimeChanged();
+        }
         if (getBalance(receiverId) != -1) {
-            withdraw(senderId, money, true);
-            deposit(receiverId, money, true);
+            withdraw(senderId, money, true, time);
+            deposit(receiverId, money, true, time);
             String query = "insert into transactions values("
                     + senderId + ", " + senderId + ", " + receiverId + ", 'Transfer', " + money
                     + ", curdate(), curtime());";
@@ -199,6 +247,11 @@ public class Server extends UnicastRemoteObject implements ServerIF {
             return true;
         } else
             return false;
+    }
+
+    @Override
+    public long sendInstance() {
+        return instance;
     }
 
     private double getBalance(int accId) {
@@ -222,6 +275,24 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     private String encoder(String text) {
         Encoder encoder = Base64.getEncoder();
         return encoder.encodeToString(text.getBytes());
+    }
+
+    @Override
+    public void getLeader(int leader) throws RemoteException {
+        this.leader = leader;
+        if (leader == port)
+            System.out.println("This server is now the leader!");
+    }
+
+    @Override
+    public void setTime(int newTime) throws RemoteException {
+        this.time = newTime;
+        System.out.println("Time has been updated to " + this.time);
+    }
+
+    @Override
+    public int getTime() throws RemoteException {
+        return time;
     }
 
     // private String decoder(String text) {

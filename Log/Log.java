@@ -35,47 +35,75 @@ public class Log {
         }
     }
 
-    private static JSONObject serverAdderLog(int port) {
+    private static JSONObject serverAdderLog(int port, long instance) {
         JSONObject jsonObject = readLog();
 
         JSONObject jsonObject2 = new JSONObject();
-        jsonObject2.put("Server", new JSONObject());
-        jsonObject2.put("Client", new JSONObject());
+
+        JSONObject jsonObject3 = new JSONObject();
+
+        jsonObject3.put("Server", new JSONObject());
+
+        jsonObject3.put("Client", new JSONObject());
+
+        jsonObject2.put(String.valueOf(instance), jsonObject3);
+
         jsonObject.put(String.valueOf(port), jsonObject2);
+
         writeLog(jsonObject);
+
         return jsonObject2;
     }
 
-    private static void clientAdderLog(int port, int accId) {
+    private static void clientAdderLog(int port, long instance, int accId) {
         JSONObject jsonObject = readLog();
+
         JSONObject jsonObject2 = (JSONObject) jsonObject.get(String.valueOf(port));
-        JSONObject jsonObject3 = (JSONObject) jsonObject.get("Client");
-        if (jsonObject3 == null)
-            jsonObject3 = new JSONObject();
+
+        JSONObject jsonObject3 = (JSONObject) jsonObject2.get(String.valueOf(instance));
+
+        JSONObject jsonObject4 = (JSONObject) jsonObject3.get("Client");
+        if (jsonObject4 == null)
+            jsonObject4 = new JSONObject();
         HashMap<Long, String> log = new HashMap<Long, String>();
-        jsonObject3.put(String.valueOf(accId), log);
-        jsonObject2.put("Client", jsonObject3);
+
+        jsonObject4.put(String.valueOf(accId), log);
+
+        jsonObject3.put("Client", jsonObject4);
+
+        jsonObject2.put(String.valueOf(instance), jsonObject3);
+
         jsonObject.put(String.valueOf(port), jsonObject2);
         writeLog(jsonObject);
     }
 
-    public static void serverLog(int port, String message) {
+    public static void serverLog(int port, int time, long instance, String message) {
         JSONObject jsonObject = readLog();
         JSONObject jsonObject2 = (JSONObject) jsonObject.get(String.valueOf(port));
+
         if (jsonObject2 == null) {
-            jsonObject2 = serverAdderLog(port);
+            jsonObject2 = serverAdderLog(port, instance);
         }
 
-        HashMap<Long, String> log = (HashMap<Long, String>) jsonObject2.get("Server");
+        JSONObject jsonObject3 = (JSONObject) jsonObject2.get(String.valueOf(instance));
+        if (jsonObject3 == null) {
+            jsonObject3 = new JSONObject();
+            jsonObject3.put("Server", new JSONObject());
+            jsonObject3.put("Client", new JSONObject());
+        }
+
+        HashMap<Integer, String> log = (HashMap<Integer, String>) jsonObject3.get("Server");
         if (log == null)
-            log = new HashMap<Long, String>();
-        log.put(System.currentTimeMillis(), message);
-        jsonObject2.put("Server", log);
+            log = new HashMap<Integer, String>();
+
+        log.put(time, message);
+        jsonObject3.put("Server", log);
+        jsonObject2.put(String.valueOf(instance), jsonObject3);
         jsonObject.put(String.valueOf(port), jsonObject2);
         writeLog(jsonObject);
     }
 
-    public static void clientLog(int port, int accId, String message) {
+    public static void clientLog(int port, int time, long instance, int accId, String message) {
         JSONObject jsonObject = readLog();
         JSONObject jsonObject2 = (JSONObject) jsonObject.get(String.valueOf(port));
 
@@ -83,23 +111,35 @@ public class Log {
             System.out.println("Attempt to write without connecting to server!");
             return;
         }
-        JSONObject jsonObject3 = (JSONObject) jsonObject2.get(String.valueOf("Client"));
-        
-        HashMap<Long, String> log = (HashMap<Long, String>) jsonObject3.get(String.valueOf(accId));
-        if (log == null) {
-            clientAdderLog(port, accId);
-            log = new HashMap<Long, String>();
+
+        JSONObject jsonObject3 = (JSONObject) jsonObject2.get(String.valueOf(instance));
+
+        if (jsonObject3 == null) {
+            System.out.println("Attempt to write without adding instance!");
+            return;
         }
-        log.put(System.currentTimeMillis(), message);
-        jsonObject3.put(String.valueOf(accId), log);
-        jsonObject2.put("Client", jsonObject3);
+
+        JSONObject jsonObject4 = (JSONObject) jsonObject3.get(String.valueOf("Client"));
+
+        HashMap<Integer, String> log = (HashMap<Integer, String>) jsonObject4.get(String.valueOf(accId));
+
+        if (log == null) {
+            clientAdderLog(port, instance, accId);
+            log = new HashMap<Integer, String>();
+        }
+
+        log.put(time, message);
+        jsonObject4.put(String.valueOf(accId), log);
+        jsonObject3.put("Client", jsonObject4);
+        jsonObject2.put(String.valueOf(instance), jsonObject3);
         jsonObject.put(String.valueOf(port), jsonObject2);
         writeLog(jsonObject);
     }
 
     public static void main(String[] args) {
-        serverLog(4345, "Server online");
-        clientLog(4345, 453453, "New Account request");
+        // long instance = System.currentTimeMillis();
+        // serverLog(4345, 50, instance, "Server online");
+        // clientLog(4345, 100, instance, 453453, "New Account request");
 
     }
 }

@@ -25,13 +25,15 @@ public class LoadBalancerDriver {
             // Runtime.getRuntime().exec("cmd /c start cmd.exe /K \"" + command + "\""); //
             // ports already has space at the
             // beginning...
-            createServer();
+            createLoadBalancer();
             int[] ports = new int[args.length];
-            HashMap<Integer, Boolean> portsAreBusy = new HashMap<Integer, Boolean>();
+            HashMap<Integer, Integer> portsAreBusy = new HashMap<Integer, Integer>();
+
             for (int i = 0; i < args.length; i++) {
                 ports[i] = Integer.parseInt(args[i]);
-                portsAreBusy.put(Integer.parseInt(args[i]), false);
+                portsAreBusy.put(Integer.parseInt(args[i]), 0);
             }
+
             LoadBalancer loadBalancer = new LoadBalancer();
             UnicastRemoteObject.unexportObject(loadBalancer, true);
             LoadBalancerIF loadBalancerIF = (LoadBalancerIF) UnicastRemoteObject.exportObject(loadBalancer, 0);
@@ -46,12 +48,11 @@ public class LoadBalancerDriver {
         sc.close();
     }
 
-    public static void createServer() {
+    public static void createLoadBalancer() {
         Thread t = new Thread(new Runnable() {
 
             public void run() {
                 try {
-
                     System.out.println("Trying to start load balancer on port " + 3000 + "...");
                     LocateRegistry.createRegistry(3000);
                 } catch (RemoteException e) {

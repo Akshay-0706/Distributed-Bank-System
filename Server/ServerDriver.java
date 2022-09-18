@@ -2,6 +2,7 @@ package Server;
 
 import java.io.IOException;
 import java.rmi.AccessException;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -10,18 +11,24 @@ import java.rmi.server.UnicastRemoteObject;
 public class ServerDriver {
     public static void main(String[] args) {
         int port = Integer.parseInt(args[0]);
+        int time = Integer.parseInt(args[1]);
+        long instance = Long.parseLong(args[2]);
 
         try {
             createServer(port);
+            Registry registry = LocateRegistry.getRegistry(2000);
+            ServerMasterIF serverMasterIF = (ServerMasterIF) registry.lookup("master");
 
-            Server server = new Server(port);
+            Server server = new Server(port, time, instance, serverMasterIF);
             UnicastRemoteObject.unexportObject(server, true);
             ServerIF serverIF = (ServerIF) UnicastRemoteObject.exportObject(server, 0);
-            Registry registry = LocateRegistry.getRegistry(port);
-            registry.rebind(String.valueOf(port), serverIF);
+            Registry registry2 = LocateRegistry.getRegistry(port);
+            registry2.rebind(String.valueOf(port), serverIF);
         } catch (AccessException e) {
             e.printStackTrace();
         } catch (RemoteException e) {
+            e.printStackTrace();
+        } catch (NotBoundException e) {
             e.printStackTrace();
         }
     }
@@ -31,9 +38,8 @@ public class ServerDriver {
 
             public void run() {
                 try {
-                    if (port == 3000) {
-                        System.out
-                                .println("Port 3000 is already assigned to Load Balancer, please use another!");
+                    if (port == 2000 || port == 3000) {
+                        System.out.println("Port 2000 & 3000 are not available, please use another!");
                         return;
                     }
                     System.out.println("Trying to create server on port " + port + "...");

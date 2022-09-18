@@ -8,8 +8,9 @@ import java.util.HashMap;
 public class LoadBalancer extends UnicastRemoteObject implements LoadBalancerIF {
 
     private int current = 0;
+    private int maxCapacity = 2;
     private int ports[];
-    private HashMap<Integer, Boolean> portsAreBusy;
+    private HashMap<Integer, Integer> portsAreBusy;
     private ArrayList<Integer> activeAcc;
 
     public LoadBalancer() throws RemoteException {
@@ -17,7 +18,7 @@ public class LoadBalancer extends UnicastRemoteObject implements LoadBalancerIF 
     }
 
     @Override
-    public void setServers(int ports[], HashMap<Integer, Boolean> portsAreBusy) throws RemoteException {
+    public void setServers(int ports[], HashMap<Integer, Integer> portsAreBusy) throws RemoteException {
         this.ports = ports;
         this.portsAreBusy = portsAreBusy;
         activeAcc = new ArrayList<Integer>();
@@ -26,7 +27,8 @@ public class LoadBalancer extends UnicastRemoteObject implements LoadBalancerIF 
     @Override
     public int requestServer() throws RemoteException {
         System.out.println("Checking for available servers...");
-        while (portsAreBusy.get(ports[current % ports.length])) {
+
+        while (portsAreBusy.get(ports[current % ports.length]) == maxCapacity) {
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
@@ -34,7 +36,8 @@ public class LoadBalancer extends UnicastRemoteObject implements LoadBalancerIF 
             }
             current++;
         }
-        portsAreBusy.put(ports[current % ports.length], true);
+
+        portsAreBusy.put(ports[current % ports.length], portsAreBusy.get(ports[current % ports.length]) + 1);
         System.out.println("Server " + ports[current % ports.length] + " is available...");
         current++;
         return ports[(current - 1) % ports.length];
@@ -42,14 +45,14 @@ public class LoadBalancer extends UnicastRemoteObject implements LoadBalancerIF 
 
     @Override
     public void freeServer(int port) throws RemoteException {
-        portsAreBusy.put(port, false);
+        portsAreBusy.put(port, portsAreBusy.get(ports[current % ports.length]) - 1);
     }
 
     @Override
     public void lockAccount(int accId) throws RemoteException {
         if (activeAcc.contains(accId))
-        System.out.println(
-        "\nYou have already logged in to this account.\nLog out from other account to continue...");
+            System.out.println(
+                    "\nYou have already logged in to this account.\nLog out from other account to continue...");
         while (activeAcc.contains(accId)) {
             try {
                 Thread.sleep(1000);

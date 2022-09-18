@@ -5,7 +5,7 @@ import java.rmi.RemoteException;
 import java.util.HashMap;
 
 public interface LoadBalancerIF extends Remote {
-    public void setServers(int ports[], HashMap<Integer, Boolean> portsAreBusy) throws RemoteException;
+    public void setServers(int ports[], HashMap<Integer, Integer> portsAreBusy) throws RemoteException;
 
     public int requestServer() throws RemoteException;
 
