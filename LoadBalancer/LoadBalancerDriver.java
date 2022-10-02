@@ -9,6 +9,8 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
 import java.util.Scanner;
 
+import UI.Printer;
+
 public class LoadBalancerDriver {
     public static void main(String[] args) {
         if (args.length == 0) {
@@ -53,17 +55,20 @@ public class LoadBalancerDriver {
 
             public void run() {
                 try {
-                    System.out.println("Trying to start load balancer on port " + 3000 + "...");
+                    // System.out.println("Trying to start load balancer on port " + 3000 + "...");
                     LocateRegistry.createRegistry(3000);
                 } catch (RemoteException e) {
                     try {
-                        System.out.println("Port already in use, trying to reconnect...");
+                        // System.out.println("Port already in use, trying to reconnect...");
                         LocateRegistry.getRegistry(3000);
                     } catch (RemoteException e1) {
                         System.out.println("Unable to reconnect to port: " + e.getMessage());
                     }
                 }
-                System.out.println("Load Balancer running on port " + 3000 + "...\n");
+                // System.out.println("Load Balancer running on port " + 3000 + "...\n");
+                Printer.boxPrinter("Load Balancer: " + 3000);
+                System.out.println();
+
                 try {
                     System.in.read();
                 } catch (IOException e) {

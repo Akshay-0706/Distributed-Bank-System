@@ -2,6 +2,7 @@ package Server;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 
 public interface ServerIF extends Remote {
     public void notifyLogOut(int accId) throws RemoteException;
@@ -14,7 +15,7 @@ public interface ServerIF extends Remote {
 
     public String[] loginAccount(int accId, String password, int time) throws RemoteException;
 
-    public void deleteAccount(int accId, String password, int time) throws RemoteException;
+    public int deleteAccount(int accId, String password, int time) throws RemoteException;
 
     public void withdraw(int accId, double money, boolean isToBeTransfered, int time) throws RemoteException;
 
@@ -30,4 +31,9 @@ public interface ServerIF extends Remote {
 
     public int getTime() throws RemoteException;
 
+    public void notifyTimeChanged() throws RemoteException;
+
+    public void addNewServer(int port) throws RemoteException;
+
+    public void checkIfServerIsAlive() throws RemoteException;
 }

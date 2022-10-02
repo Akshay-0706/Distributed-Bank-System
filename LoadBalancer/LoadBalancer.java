@@ -5,6 +5,8 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import UI.Printer;
+
 public class LoadBalancer extends UnicastRemoteObject implements LoadBalancerIF {
 
     private int current = 0;
@@ -39,6 +41,7 @@ public class LoadBalancer extends UnicastRemoteObject implements LoadBalancerIF 
 
         portsAreBusy.put(ports[current % ports.length], portsAreBusy.get(ports[current % ports.length]) + 1);
         System.out.println("Server " + ports[current % ports.length] + " is available...");
+        System.out.println();
         current++;
         return ports[(current - 1) % ports.length];
     }

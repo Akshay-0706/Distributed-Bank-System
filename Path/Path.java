@@ -12,8 +12,8 @@ public class Path {
 
     private static String client = current + "\\\\Client\\\\Client.java";
 
-    private static String loadBalancer = current + "\\\\Server\\\\LoadBalancer.java";
-    private static String loadBalancerDriver = current + "\\\\Server\\\\LoadBalancerDriver.java";
+    private static String loadBalancer = current + "\\\\LoadBalancer\\\\LoadBalancer.java";
+    private static String loadBalancerDriver = current + "\\\\LoadBalancer\\\\LoadBalancerDriver.java";
 
     private static String log = current + "\\\\Log\\\\Log.java";
 

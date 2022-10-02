@@ -12,6 +12,7 @@ import Account.Account;
 import LoadBalancer.LoadBalancerIF;
 import Log.Log;
 import Server.ServerIF;
+import UI.Printer;
 
 public class Client {
     // protected Client() throws RemoteException {
@@ -40,11 +41,15 @@ public class Client {
             Registry registry = LocateRegistry.getRegistry(3000);
             loadBalancerIF = (LoadBalancerIF) registry.lookup("load");
 
-            System.out.println("Please wait, while we look for some of our servers to get free...");
+            // System.out.println("Please wait, while we look for some of our servers to get
+            // free...");
 
             port = loadBalancerIF.requestServer();
 
-            System.out.println("Found one!\nYou are connected to our server " + port);
+            // System.out.println("Found one!\nYou are connected to our server " + port);
+
+            Printer.boxPrinter("Connected to " + port);
+            System.out.println();
 
             Registry registry2 = LocateRegistry.getRegistry(port);
             serverIF = (ServerIF) registry2.lookup(String.valueOf(port));
@@ -54,7 +59,7 @@ public class Client {
             initializeMenu();
             serverIF.notifyStopConnection();
             loadBalancerIF.freeServer(port);
-            System.out.println("END");
+            System.exit(0);
 
         } catch (RemoteException e) {
             System.out.println("Start the server first: " + e.getMessage());
@@ -71,11 +76,10 @@ public class Client {
         System.out.println("Welcome to ASK BANK!\n");
         while (true) {
             System.out.println(assistance[random.nextInt(assistance.length)]);
-
-            System.out.println("\n0. Exit\t\t1. Create\t2. Login to\t3. Delete");
-            System.out.println("\t\t   account\t   my account\t   account");
+            Printer.boxPrinter("0. Exit    1. Create    2. Login    3. Delete");
             System.out.print("-> ");
             option = sc.nextInt();
+            System.out.println();
 
             if (option == 0) {
                 System.out.println("Thank you for using our service!");
@@ -100,9 +104,9 @@ public class Client {
     }
 
     private static void createAccount() {
-        System.out.println("\nCREATE ACCOUNT");
+        System.out.println("CREATE ACCOUNT");
         try {
-            System.out.println("We will need few details first:\n");
+            System.out.println("\nWe will need few details first:");
             System.out.print("Name -> ");
             sc.nextLine();
             String username = sc.nextLine();
@@ -110,14 +114,12 @@ public class Client {
             String password = sc.nextLine();
             System.out.print("Initial balance -> ");
             double balance = sc.nextDouble();
-            System.out.println("Above");
-            System.out.println(account);
+            System.out.println();
             int accId = serverIF.createAccount(username, password, balance, time);
             account = new Account(accId, username, password, balance);
-            System.out.println("Below");
             Log.clientLog(port, time, instance, accId, "Account created");
             System.out.println("Your account has been created!");
-            System.out.println("Account ID -> " + accId);
+            Printer.boxPrinter("Account ID: " + accId);
             System.out.println("Keep your Account ID for future usage.\n");
 
         } catch (RemoteException e) {
@@ -128,13 +130,14 @@ public class Client {
     private static void loginAccount() {
         Random random = new Random();
 
-        System.out.println("\nLOGIN");
-        System.out.println("Enter required credentials:\n");
+        System.out.println("LOGIN");
+        System.out.println("\nEnter required credentials:");
         System.out.print("Account ID -> ");
         int accId = sc.nextInt();
         sc.nextLine();
         System.out.print("Password -> ");
         String password = sc.nextLine();
+        System.out.println();
 
         try {
             Log.clientLog(port, time, instance, accId, "Login request");
@@ -146,17 +149,19 @@ public class Client {
                 loadBalancerIF.lockAccount(accId);
                 System.out.println("Welcome back Sir/Madam!");
                 while (true) {
+                    Printer.boxPrinter("Balance: " + account.getBalance());
+                    System.out.println();
                     System.out.println(assistance[random.nextInt(assistance.length)]);
-                    System.out.println("Balance -> " + account.getBalance());
-                    System.out.println("\n0. No thanks\t1. Withdraw\t2. Deposit\t3. Transfer Money");
-                    System.out.println("\t\t   money\t   money");
+                    Printer.boxPrinter("0. Logout    1. Withdraw    2. Deposit    3. Transfer");
+                    System.out.print("-> ");
                     int choice = sc.nextInt();
+                    System.out.println();
 
                     if (choice == 0) {
                         serverIF.notifyLogOut(accId);
                         loadBalancerIF.unlockAccount(accId);
                         Log.clientLog(port, time, instance, accId, "Logged out");
-                        System.out.println("Logged out!");
+                        System.out.println("Logged out!\n");
                         break;
                     }
 
@@ -177,7 +182,7 @@ public class Client {
                 }
             } else {
                 Log.clientLog(port, time, instance, accId, "Login failed");
-                System.out.println("Incorrect username or password!");
+                System.out.println("Incorrect username or password!\n");
             }
 
         } catch (RemoteException e) {
@@ -187,14 +192,17 @@ public class Client {
     }
 
     public static void withdraw() {
-        System.out.print("Amount to withdraw: ");
+        System.out.println("WITHDRAW");
+        System.out.print("\nAmount -> ");
         double money = sc.nextDouble();
         try {
             if (money > account.getBalance())
-                System.out.println("Insufficient balance!");
+                System.out.println("Failed: Insufficient balance :(\n");
             else {
                 serverIF.withdraw(account.getAccId(), money, false, time);
                 account.setBalance(account.getBalance() - money);
+                System.out.println("Success!");
+                System.out.println();
             }
         } catch (RemoteException e) {
             e.printStackTrace();
@@ -202,31 +210,39 @@ public class Client {
     }
 
     public static void deposit() {
-        System.out.print("Amount to deposit: ");
+        System.out.println("DEPOSIT");
+        System.out.print("\nAmount -> ");
         double money = sc.nextDouble();
         try {
             serverIF.deposit(account.getAccId(), money, false, time);
             account.setBalance(account.getBalance() + money);
+            System.out.println("Success!");
+            System.out.println();
         } catch (RemoteException e) {
             e.printStackTrace();
         }
     }
 
     public static void transfer() {
-        System.out.print("Receiver Account ID: ");
+        System.out.println("TRANSFER");
+        System.out.print("\nReceiver's Account ID -> ");
         int receiverId = sc.nextInt();
-        System.out.print("Amount to transfer: ");
+        System.out.print("Amount -> ");
         double money = sc.nextDouble();
 
         try {
-            if (money > account.getBalance())
-                System.out.println("Insufficient balance!");
+            if (receiverId == account.getAccId())
+                System.out.println("Error: Can't do self-transfer!\n");
+            else if (money > account.getBalance())
+                System.out.println("Failed: Insufficient balance :(\n");
             else {
                 boolean success = serverIF.transfer(account.getAccId(), receiverId, money, time);
-                if (success)
+                if (success) {
                     account.setBalance(account.getBalance() - money);
-                else
-                    System.out.println("Receiver's account does not exists");
+                    System.out.println("Success!");
+                    System.out.println();
+                } else
+                    System.out.println("Error: Receiver's account does not exists!\n");
             }
         } catch (RemoteException e) {
             e.printStackTrace();
@@ -234,9 +250,9 @@ public class Client {
     }
 
     private static void deleteAccount() {
-        System.out.println("\nDELETE ACCOUNT");
+        System.out.println("DELETE ACCOUNT");
         try {
-            System.out.println("We will need few details first:\n");
+            System.out.println("\nWe will need few details first:");
             System.out.print("Account ID -> ");
             int accId = sc.nextInt();
             sc.nextLine();
@@ -244,13 +260,17 @@ public class Client {
             String password = sc.nextLine();
             System.out.print("Write DELETE to confirm -> ");
             String confirm = sc.nextLine();
+            System.out.println();
             if (confirm.equals("DELETE")) {
                 Log.clientLog(port, time, instance, accId, "Account deletion request");
-                serverIF.deleteAccount(accId, password, time);
-                Log.clientLog(port, time, instance, accId, "Account deleted");
-
+                int status = serverIF.deleteAccount(accId, password, time);
+                if (status == 0) {
+                    System.out.println("Account deleted :(\n");
+                    Log.clientLog(port, time, instance, accId, "Account deleted");
+                } else
+                    System.out.println("Invalid details or account does not exists!\n");
             } else
-                System.out.println("Cancelling...\n");
+                System.out.println("Canceled :)\n");
         } catch (RemoteException e) {
             e.printStackTrace();
         }
