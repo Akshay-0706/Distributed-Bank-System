@@ -2,13 +2,17 @@ package LoadBalancer;
 
 import java.io.IOException;
 import java.rmi.AccessException;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
 
+import Server.ServerMaster;
+import Server.ServerMasterIF;
 import UI.Printer;
 
 public class LoadBalancerDriver {
@@ -28,12 +32,12 @@ public class LoadBalancerDriver {
             // ports already has space at the
             // beginning...
             createLoadBalancer();
-            int[] ports = new int[args.length];
-            HashMap<Integer, Integer> portsAreBusy = new HashMap<Integer, Integer>();
+            ArrayList<Integer> ports = new ArrayList<Integer>();
+            HashMap<Integer, Integer> servers = new HashMap<Integer, Integer>();
 
             for (int i = 0; i < args.length; i++) {
-                ports[i] = Integer.parseInt(args[i]);
-                portsAreBusy.put(Integer.parseInt(args[i]), 0);
+                ports.add(Integer.parseInt(args[i]));
+                servers.put(Integer.parseInt(args[i]), 0);
             }
 
             LoadBalancer loadBalancer = new LoadBalancer();
@@ -41,10 +45,17 @@ public class LoadBalancerDriver {
             LoadBalancerIF loadBalancerIF = (LoadBalancerIF) UnicastRemoteObject.exportObject(loadBalancer, 0);
             Registry registry = LocateRegistry.getRegistry(3000);
             registry.rebind("load", loadBalancerIF);
-            loadBalancerIF.setServers(ports, portsAreBusy);
+            loadBalancerIF.setServers(ports, servers);
+
+            Registry registry2 = LocateRegistry.getRegistry(2000);
+            ServerMasterIF serverMasterIF = (ServerMasterIF) registry2.lookup("master");
+            serverMasterIF.setLoadBalancerIsReady();
+
         } catch (AccessException e) {
             e.printStackTrace();
         } catch (RemoteException e) {
+            e.printStackTrace();
+        } catch (NotBoundException e) {
             e.printStackTrace();
         }
         sc.close();

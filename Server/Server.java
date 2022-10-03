@@ -41,20 +41,10 @@ public class Server extends UnicastRemoteObject implements ServerIF {
 
         ports = this.serverMasterIF.getPorts(port);
 
-        // if (!ports.contains(port)) {
-        // for (Integer current : ports) {
-        // try {
-        // Registry registry = LocateRegistry.getRegistry(current);
-        // ServerIF serverIF = (ServerIF) registry.lookup(String.valueOf(current));
-        // serverIF.addNewServer(port);
-        // } catch (NotBoundException e) {
-        // messagePrinter("Not bound exception for server " + current);
-        // }
-        // }
-        // ports.add(port);
-        // }
-
-        assignLeader();
+        if (!ports.contains(port))
+            newServerAdder();
+        else
+            assignLeader();
 
         Log.serverLog(port, this.time, instance, "Server is online");
 
@@ -90,20 +80,54 @@ public class Server extends UnicastRemoteObject implements ServerIF {
         }
     }
 
-    private void messagePrinter(String message) {
+    private void messagePrinter(String message, boolean inBox) {
         try {
             while (timerSemaphore) {
                 Thread.sleep(1000);
             }
             printerSemaphore = true;
             for (int i = 0; i < 6 + String.valueOf(time).length() + 4; i++) {
-                System.out.print("\b");
+                System.out.print("\b \b");
             }
-            System.out.println(message);
+            if (inBox)
+                Printer.boxPrinter(message);
+            else
+                System.out.println(message);
             printerSemaphore = false;
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    private void newServerAdder() {
+        Thread t = new Thread(new Runnable() {
+            public void run() {
+                try {
+
+                    while (!serverMasterIF.areAllServersReady()) {
+                        Thread.sleep(1000);
+                    }
+
+                    serverMasterIF.waitForLoadBalancerToBeReady();
+
+                    for (Integer current : ports) {
+                        try {
+                            Registry registry = LocateRegistry.getRegistry(current);
+                            ServerIF serverIF = (ServerIF) registry.lookup(String.valueOf(current));
+                            serverIF.addNewServer(port, true);
+                        } catch (NotBoundException e) {
+                            messagePrinter("NOT BOUND EXCEPTION: " + current, false);
+                        }
+                    }
+                    addNewServer(port, false);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (RemoteException e1) {
+                    e1.printStackTrace();
+                }
+            }
+        });
+        t.start();
     }
 
     private void timer() {
@@ -112,7 +136,7 @@ public class Server extends UnicastRemoteObject implements ServerIF {
                 try {
                     while (true) {
                         for (int i = 0; i < 6 + String.valueOf(time).length() + 4; i++) {
-                            System.out.print("\b");
+                            System.out.print("\b \b");
                         }
                         while (printerSemaphore) {
                             Thread.sleep(1000);
@@ -155,13 +179,15 @@ public class Server extends UnicastRemoteObject implements ServerIF {
                                     serverIF = (ServerIF) registry.lookup(String.valueOf(current));
                                     serverIF.checkIfServerIsAlive();
                                 } catch (RemoteException e) {
-                                    messagePrinter("Server " + current + " is dead");
-                                    messagePrinter("Reassigning leader...");
+                                    messagePrinter("Server " + current + " is dead", true);
+                                    messagePrinter("Reassigning leader...", false);
                                     ports.remove(current);
                                     assignLeader();
+                                    if (leader == port)
+                                        serverMasterIF.removeServer(current);
                                     break;
                                 } catch (NotBoundException e) {
-                                    messagePrinter("NOT BOUND EXCEPTION: " + current);
+                                    messagePrinter("NOT BOUND EXCEPTION: " + current, false);
                                 }
                         }
                         portsSemaphore = false;
@@ -171,6 +197,30 @@ public class Server extends UnicastRemoteObject implements ServerIF {
                     e.printStackTrace();
                 } catch (RemoteException e1) {
                     e1.printStackTrace();
+                }
+            }
+        });
+        t.start();
+    }
+
+    private void getLeaderInterface() {
+        Thread t = new Thread(new Runnable() {
+            public void run() {
+                try {
+                    while (!serverMasterIF.areOtherServersReady(port)) {
+                        Thread.sleep(1000);
+                    }
+                    Registry registry = LocateRegistry.getRegistry(leader);
+                    leaderIF = (ServerIF) registry.lookup(String.valueOf(leader));
+
+                    messagePrinter("Leader is Server " + leader, true);
+
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                } catch (NotBoundException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
         });
@@ -206,7 +256,7 @@ public class Server extends UnicastRemoteObject implements ServerIF {
         Random random = new Random();
         int accId = random.nextInt(900000000) + 100000000;
         try {
-            messagePrinter("Account creation request granted...");
+            messagePrinter("Account creation request granted...", false);
 
             String query = "insert into accounts values (" + accId + ", '" + username + "', '"
                     + encoder(password)
@@ -219,7 +269,7 @@ public class Server extends UnicastRemoteObject implements ServerIF {
             Printer.boxPrinter("Account created!");
             System.out.println();
         } catch (SQLException e) {
-            messagePrinter("Account ID already exists, creating another one...\n");
+            messagePrinter("Account ID already exists, creating another one...\n", false);
             return createAccount(username, password, balance, time);
         }
         return accId;
@@ -237,7 +287,7 @@ public class Server extends UnicastRemoteObject implements ServerIF {
         String credentials[] = null;
         try {
             Log.serverLog(port, this.time, instance, accId + ": Login requested");
-            messagePrinter("Account login request granted...");
+            messagePrinter("Account login request granted...", false);
 
             String query = "select * from accounts where accId = '" + accId + "' and password = '" + encoder(password)
                     + "' limit 1;";
@@ -255,7 +305,7 @@ public class Server extends UnicastRemoteObject implements ServerIF {
                 System.out.println();
             } else {
                 Log.serverLog(port, this.time, instance, accId + ": Login failed");
-                messagePrinter("Invalid details or account does not exists!\n");
+                messagePrinter("Invalid details or account does not exists!\n", false);
             }
 
         } catch (SQLException e) {
@@ -276,7 +326,7 @@ public class Server extends UnicastRemoteObject implements ServerIF {
         }
         if (loginAccount(accId, password, time) != null) {
             try {
-                messagePrinter("Account deletion request granted...");
+                messagePrinter("Account deletion request granted...", false);
 
                 String query = "delete from accounts where accId = " + accId + ";";
                 statement.executeUpdate(query);
@@ -303,7 +353,7 @@ public class Server extends UnicastRemoteObject implements ServerIF {
                 leaderIF.notifyTimeChanged();
         }
         try {
-            messagePrinter("Money withdraw request received...");
+            messagePrinter("Money withdraw request received...", false);
 
             String query = "update accounts set balance = " + (getBalance(accId) - money) + " where accId = "
                     + accId + ";";
@@ -333,7 +383,7 @@ public class Server extends UnicastRemoteObject implements ServerIF {
                 leaderIF.notifyTimeChanged();
         }
         try {
-            messagePrinter("Money deposit request received...");
+            messagePrinter("Money deposit request received...", false);
             String query = "update accounts set balance = " + (getBalance(accId) + money) + " where accId = "
                     + accId + ";";
             statement.executeUpdate(query);
@@ -362,7 +412,7 @@ public class Server extends UnicastRemoteObject implements ServerIF {
                 leaderIF.notifyTimeChanged();
         }
         if (getBalance(receiverId) != -1) {
-            messagePrinter("Money transfer request received...");
+            messagePrinter("Money transfer request received...", false);
             withdraw(senderId, money, true, time);
             deposit(receiverId, money, true, time);
             String query = "insert into transactions values("
@@ -395,7 +445,7 @@ public class Server extends UnicastRemoteObject implements ServerIF {
             if (resultSet.next()) {
                 balance = resultSet.getDouble("balance");
             } else {
-                messagePrinter("Account does not exists: " + accId);
+                messagePrinter("Account does not exists: " + accId, false);
                 System.out.println();
             }
 
@@ -412,35 +462,26 @@ public class Server extends UnicastRemoteObject implements ServerIF {
 
     public void assignLeader() {
 
-        try {
-            Collections.sort(ports, Collections.reverseOrder());
+        // try {
+        // while (portsSemaphore) {
+        // Thread.sleep(1000);
+        // messagePrinter("Waiting...", false);
+        // }
+        // newServerSemaphore = true;
+        Collections.sort(ports, Collections.reverseOrder());
+        // newServerSemaphore = false;
+        // } catch (InterruptedException e) {
+        // e.printStackTrace();
+        // }
 
-            leader = ports.get(0);
+        leader = ports.get(0);
 
-            if (leader == port)
-                Printer.boxPrinter("Leader");
-            else {
-
-                while (!serverMasterIF.areOtherServersReady(port)) {
-                    Thread.sleep(1000);
-                }
-
-                Registry registry = LocateRegistry.getRegistry(leader);
-                leaderIF = (ServerIF) registry.lookup(String.valueOf(leader));
-            }
-
-        } catch (NotBoundException e) {
-            try {
-                Thread.sleep(1000);
-                assignLeader();
-            } catch (InterruptedException e1) {
-                e1.printStackTrace();
-            }
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+        if (leader == port) {
+            messagePrinter("Leader", true);
+        } else {
+            getLeaderInterface();
         }
+
     }
 
     @Override
@@ -451,7 +492,7 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     @Override
     public void setTime(int newTime) throws RemoteException {
         this.time = newTime;
-        messagePrinter("Time has been updated to " + this.time);
+        messagePrinter("Time updated to " + this.time, true);
         System.out.println();
     }
 
@@ -498,8 +539,9 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     }
 
     @Override
-    public void addNewServer(int port) throws RemoteException {
-        messagePrinter("Added new server " + port);
+    public void addNewServer(int port, boolean printMessage) throws RemoteException {
+        if (printMessage)
+            messagePrinter("New server " + port, true);
         try {
             while (portsSemaphore) {
                 Thread.sleep(1000);

@@ -8,11 +8,10 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Scanner;
-import java.util.TreeMap;
 
+import LoadBalancer.LoadBalancerIF;
 import Path.Path;
 import UI.Printer;
 
@@ -22,10 +21,13 @@ public class ServerMaster extends UnicastRemoteObject implements ServerMasterIF 
         createMasterServer();
     }
 
-    private static TreeMap<Integer, Boolean> servers;
+    private static HashMap<Integer, Boolean> servers;
     private static ArrayList<Integer> ports;
+    private static ServerMasterIF serverMasterIF;
+    private static LoadBalancerIF loadBalancerIF;
     private static long instance;
     private static int count;
+    private static boolean isLoadBalancerReady = false;
     // private static Integer leader;
 
     public static void main(String[] args) {
@@ -35,7 +37,7 @@ public class ServerMaster extends UnicastRemoteObject implements ServerMasterIF 
         try {
             serverMaster = new ServerMaster();
             UnicastRemoteObject.unexportObject(serverMaster, true);
-            ServerMasterIF serverMasterIF = (ServerMasterIF) UnicastRemoteObject.exportObject(serverMaster, 0);
+            serverMasterIF = (ServerMasterIF) UnicastRemoteObject.exportObject(serverMaster, 0);
             Registry registry = LocateRegistry.getRegistry(2000);
             registry.rebind("master", serverMasterIF);
         } catch (RemoteException e1) {
@@ -52,7 +54,7 @@ public class ServerMaster extends UnicastRemoteObject implements ServerMasterIF 
         System.out.print("No of servers: ");
         count = sc.nextInt();
 
-        servers = new TreeMap<Integer, Boolean>();
+        servers = new HashMap<Integer, Boolean>();
         ports = new ArrayList<Integer>();
 
         instance = System.currentTimeMillis();
@@ -70,8 +72,8 @@ public class ServerMaster extends UnicastRemoteObject implements ServerMasterIF 
             for (int i = 0; i < count; i++) {
                 System.out.print("Port " + (i + 1) + ": ");
                 int port = sc.nextInt();
-                while (port < 1 || port > 65535) {
-                    System.out.println("This port no. is invalid!");
+                while (port < 1 || port > 65535 || port == 2000 || port == 3000) {
+                    System.out.println("This port no. is unavailable!");
                     System.out.print("Reneter Port " + (i + 1) + ": ");
                     port = sc.nextInt();
                 }
@@ -101,6 +103,12 @@ public class ServerMaster extends UnicastRemoteObject implements ServerMasterIF 
 
                 Runtime.getRuntime()
                         .exec("cmd /c start cmd.exe /K \"" + commandForLoadBalancerDriver + loadBalancerPorts + "\"");
+
+                serverMasterIF.waitForLoadBalancerToBeReady();
+
+                Registry registry = LocateRegistry.getRegistry(3000);
+                loadBalancerIF = (LoadBalancerIF) registry.lookup("load");
+
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -110,6 +118,8 @@ public class ServerMaster extends UnicastRemoteObject implements ServerMasterIF 
         } catch (RemoteException e) {
             e.printStackTrace();
         } catch (IOException e) {
+        } catch (NotBoundException e) {
+            e.printStackTrace();
         }
     }
 
@@ -127,9 +137,9 @@ public class ServerMaster extends UnicastRemoteObject implements ServerMasterIF 
 
     @Override
     public boolean areOtherServersReady(int port) {
-    TreeMap<Integer, Boolean> otherServers = new TreeMap<Integer, Boolean>(servers);
-    otherServers.remove(port);
-    boolean allReady = true;
+        HashMap<Integer, Boolean> otherServers = new HashMap<Integer, Boolean>(servers);
+        otherServers.remove(port);
+        boolean allReady = true;
         for (Boolean ready : otherServers.values()) {
             if (!ready) {
                 allReady = false;
@@ -266,10 +276,11 @@ public class ServerMaster extends UnicastRemoteObject implements ServerMasterIF 
         }
         ArrayList<Integer> oldPorts = new ArrayList<Integer>(ports);
         if (!ports.contains(port)) {
-            System.out.println("Added new server " + port);
+            Printer.boxPrinter("Added Server " + port);
             ports.add(port);
             servers.put(port, false);
             count++;
+            loadBalancerIF.addServer(port);
         }
 
         return oldPorts;
@@ -278,6 +289,31 @@ public class ServerMaster extends UnicastRemoteObject implements ServerMasterIF 
     @Override
     public long getInstance() throws RemoteException {
         return instance;
+    }
+
+    @Override
+    public void removeServer(int port) throws RemoteException {
+        Printer.boxPrinter("Removed Server " + port);
+        ports.remove(ports.indexOf(port));
+        servers.remove(port);
+        count--;
+        loadBalancerIF.removeServer(port);
+    }
+
+    @Override
+    public void waitForLoadBalancerToBeReady() throws RemoteException {
+        try {
+            while (!isLoadBalancerReady) {
+                Thread.sleep(1000);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void setLoadBalancerIsReady() throws RemoteException {
+        isLoadBalancerReady = true;
     }
 
     // @Override

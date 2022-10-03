@@ -19,5 +19,11 @@ public interface ServerMasterIF extends Remote {
 
     public boolean areOtherServersReady(int port) throws RemoteException;
 
+    public void waitForLoadBalancerToBeReady() throws RemoteException;
+
+    public void setLoadBalancerIsReady() throws RemoteException;
+
+    public void removeServer(int port) throws RemoteException;
+
     // public void checkServerLife() throws RemoteException;
 }
