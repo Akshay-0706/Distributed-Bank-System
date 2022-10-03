@@ -36,6 +36,7 @@ public class ServerDriver {
             ServerIF serverIF = (ServerIF) UnicastRemoteObject.exportObject(server, 0);
             Registry registry2 = LocateRegistry.getRegistry(port);
             registry2.rebind(String.valueOf(port), serverIF);
+            serverMasterIF.notifyServerIsReady(port);
         } catch (AccessException e) {
             e.printStackTrace();
         } catch (RemoteException e) {

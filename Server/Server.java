@@ -41,20 +41,18 @@ public class Server extends UnicastRemoteObject implements ServerIF {
 
         ports = this.serverMasterIF.getPorts(port);
 
-        if (!ports.contains(port)) {
-            for (Integer current : ports) {
-                try {
-                    Registry registry = LocateRegistry.getRegistry(current);
-                    ServerIF serverIF = (ServerIF) registry.lookup(String.valueOf(current));
-                    serverIF.addNewServer(port);
-                } catch (NotBoundException e) {
-                    messagePrinter("Not bound exception for server " + current);
-                }
-            }
-
-            ports.add(port);
-        }
-        this.serverMasterIF.notifyServerIsReady(port);
+        // if (!ports.contains(port)) {
+        // for (Integer current : ports) {
+        // try {
+        // Registry registry = LocateRegistry.getRegistry(current);
+        // ServerIF serverIF = (ServerIF) registry.lookup(String.valueOf(current));
+        // serverIF.addNewServer(port);
+        // } catch (NotBoundException e) {
+        // messagePrinter("Not bound exception for server " + current);
+        // }
+        // }
+        // ports.add(port);
+        // }
 
         assignLeader();
 
@@ -139,6 +137,9 @@ public class Server extends UnicastRemoteObject implements ServerIF {
         Thread t = new Thread(new Runnable() {
             public void run() {
                 try {
+                    while (!serverMasterIF.areOtherServersReady(port)) {
+                        Thread.sleep(1000);
+                    }
                     Registry registry;
                     ServerIF serverIF;
                     while (true) {
@@ -160,7 +161,7 @@ public class Server extends UnicastRemoteObject implements ServerIF {
                                     assignLeader();
                                     break;
                                 } catch (NotBoundException e) {
-                                    e.printStackTrace();
+                                    messagePrinter("NOT BOUND EXCEPTION: " + current);
                                 }
                         }
                         portsSemaphore = false;
@@ -168,6 +169,8 @@ public class Server extends UnicastRemoteObject implements ServerIF {
                     }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
+                } catch (RemoteException e1) {
+                    e1.printStackTrace();
                 }
             }
         });
@@ -415,10 +418,10 @@ public class Server extends UnicastRemoteObject implements ServerIF {
             leader = ports.get(0);
 
             if (leader == port)
-                messagePrinter("This server is now the leader!\n");
+                Printer.boxPrinter("Leader");
             else {
 
-                while (!serverMasterIF.areAllServersReady()) {
+                while (!serverMasterIF.areOtherServersReady(port)) {
                     Thread.sleep(1000);
                 }
 
@@ -433,7 +436,6 @@ public class Server extends UnicastRemoteObject implements ServerIF {
             } catch (InterruptedException e1) {
                 e1.printStackTrace();
             }
-
         } catch (RemoteException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
@@ -499,12 +501,12 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     public void addNewServer(int port) throws RemoteException {
         messagePrinter("Added new server " + port);
         try {
-            while (printerSemaphore) {
+            while (portsSemaphore) {
                 Thread.sleep(1000);
             }
-            portsSemaphore = true;
+            newServerSemaphore = true;
             ports.add(port);
-            portsSemaphore = false;
+            newServerSemaphore = false;
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

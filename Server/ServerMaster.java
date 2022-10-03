@@ -125,6 +125,20 @@ public class ServerMaster extends UnicastRemoteObject implements ServerMasterIF 
         return allReady;
     }
 
+    @Override
+    public boolean areOtherServersReady(int port) {
+    TreeMap<Integer, Boolean> otherServers = new TreeMap<Integer, Boolean>(servers);
+    otherServers.remove(port);
+    boolean allReady = true;
+        for (Boolean ready : otherServers.values()) {
+            if (!ready) {
+                allReady = false;
+                break;
+            }
+        }
+        return allReady;
+    }
+
     // private void sendPortsToServers() {
     // try {
     // while (!areAllServersReady()) {
@@ -254,6 +268,7 @@ public class ServerMaster extends UnicastRemoteObject implements ServerMasterIF 
         if (!ports.contains(port)) {
             System.out.println("Added new server " + port);
             ports.add(port);
+            servers.put(port, false);
             count++;
         }
 
