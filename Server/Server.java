@@ -499,12 +499,12 @@ public class Server extends UnicastRemoteObject implements ServerIF {
     public void addNewServer(int port) throws RemoteException {
         messagePrinter("Added new server " + port);
         try {
-            while (printerSemaphore) {
+            while (portsSemaphore) {
                 Thread.sleep(1000);
             }
-            portsSemaphore = true;
+            newServerSemaphore = true;
             ports.add(port);
-            portsSemaphore = false;
+            newServerSemaphore = false;
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
