@@ -11,18 +11,17 @@ public class LoadBalancer extends UnicastRemoteObject implements LoadBalancerIF 
 
     private int current = 0;
     private int maxCapacity = 2;
-    private int ports[];
-    private HashMap<Integer, Integer> portsAreBusy;
-    private ArrayList<Integer> activeAcc;
+    private HashMap<Integer, Integer> servers;
+    private ArrayList<Integer> ports, activeAcc;
 
     public LoadBalancer() throws RemoteException {
         super();
     }
 
     @Override
-    public void setServers(int ports[], HashMap<Integer, Integer> portsAreBusy) throws RemoteException {
+    public void setServers(ArrayList<Integer> ports, HashMap<Integer, Integer> servers) throws RemoteException {
         this.ports = ports;
-        this.portsAreBusy = portsAreBusy;
+        this.servers = servers;
         activeAcc = new ArrayList<Integer>();
     }
 
@@ -30,7 +29,7 @@ public class LoadBalancer extends UnicastRemoteObject implements LoadBalancerIF 
     public int requestServer() throws RemoteException {
         System.out.println("Checking for available servers...");
 
-        while (portsAreBusy.get(ports[current % ports.length]) == maxCapacity) {
+        while (servers.get(ports.get(current % ports.size())) == maxCapacity) {
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
@@ -39,16 +38,16 @@ public class LoadBalancer extends UnicastRemoteObject implements LoadBalancerIF 
             current++;
         }
 
-        portsAreBusy.put(ports[current % ports.length], portsAreBusy.get(ports[current % ports.length]) + 1);
-        System.out.println("Server " + ports[current % ports.length] + " is available...");
+        servers.put(ports.get(current % ports.size()), servers.get(ports.get(current % ports.size())) + 1);
+        Printer.boxPrinter("Allocating Server " + ports.get(current % ports.size()));
         System.out.println();
         current++;
-        return ports[(current - 1) % ports.length];
+        return ports.get((current - 1) % ports.size());
     }
 
     @Override
     public void freeServer(int port) throws RemoteException {
-        portsAreBusy.put(port, portsAreBusy.get(ports[current % ports.length]) - 1);
+        servers.put(port, servers.get(ports.get(current % ports.size())) - 1);
     }
 
     @Override
@@ -69,5 +68,21 @@ public class LoadBalancer extends UnicastRemoteObject implements LoadBalancerIF 
     @Override
     public void unlockAccount(int accId) throws RemoteException {
         activeAcc.remove(activeAcc.indexOf(accId));
+    }
+
+    @Override
+    public void addServer(int port) throws RemoteException {
+        Printer.boxPrinter("Added Server " + port);
+        ports.add(port);
+        servers.put(port, 0);
+    }
+
+    @Override
+    public void removeServer(int port) throws RemoteException {
+        Printer.boxPrinter("Removed Server " + port);
+        ports.remove(ports.indexOf(port));
+        if (activeAcc.contains(port))
+            activeAcc.remove(activeAcc.indexOf(port));
+        servers.remove(port);
     }
 }

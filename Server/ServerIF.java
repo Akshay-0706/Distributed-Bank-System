@@ -33,7 +33,7 @@ public interface ServerIF extends Remote {
 
     public void notifyTimeChanged() throws RemoteException;
 
-    public void addNewServer(int port) throws RemoteException;
+    public void addNewServer(int port, boolean printMessage) throws RemoteException;
 
     public void checkIfServerIsAlive() throws RemoteException;
 }

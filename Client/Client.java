@@ -41,25 +41,33 @@ public class Client {
             Registry registry = LocateRegistry.getRegistry(3000);
             loadBalancerIF = (LoadBalancerIF) registry.lookup("load");
 
-            // System.out.println("Please wait, while we look for some of our servers to get
-            // free...");
+            getServer();
 
-            port = loadBalancerIF.requestServer();
-
-            // System.out.println("Found one!\nYou are connected to our server " + port);
-
-            Printer.boxPrinter("Connected to " + port);
-            System.out.println();
-
-            Registry registry2 = LocateRegistry.getRegistry(port);
-            serverIF = (ServerIF) registry2.lookup(String.valueOf(port));
-
-            serverIF.notifyStartConnection();
-            instance = serverIF.sendInstance();
             initializeMenu();
             serverIF.notifyStopConnection();
             loadBalancerIF.freeServer(port);
             System.exit(0);
+
+        } catch (RemoteException e) {
+            System.out.println("Start the server first: " + e.getMessage());
+        } catch (NotBoundException e) {
+            System.out.println("One of two registries are failed to lookup for object: "
+                    + e.getMessage());
+        }
+    }
+
+    private static void getServer() {
+        try {
+            port = loadBalancerIF.requestServer();
+
+            Printer.boxPrinter("Connected to " + port);
+            System.out.println();
+
+            Registry registry = LocateRegistry.getRegistry(port);
+            serverIF = (ServerIF) registry.lookup(String.valueOf(port));
+
+            serverIF.notifyStartConnection();
+            instance = serverIF.sendInstance();
 
         } catch (RemoteException e) {
             System.out.println("Start the server first: " + e.getMessage());
@@ -80,6 +88,14 @@ public class Client {
             System.out.print("-> ");
             option = sc.nextInt();
             System.out.println();
+
+            try {
+                serverIF.checkIfServerIsAlive();
+            } catch (RemoteException e) {
+                Printer.boxPrinter("Server " + port + " is dead");
+                System.out.println("Requesting for another server...");
+                getServer();
+            }
 
             if (option == 0) {
                 System.out.println("Thank you for using our service!");
@@ -115,6 +131,15 @@ public class Client {
             System.out.print("Initial balance -> ");
             double balance = sc.nextDouble();
             System.out.println();
+
+            try {
+                serverIF.checkIfServerIsAlive();
+            } catch (RemoteException e) {
+                Printer.boxPrinter("Server " + port + " is dead");
+                System.out.println("Requesting for another server...");
+                getServer();
+            }
+
             int accId = serverIF.createAccount(username, password, balance, time);
             account = new Account(accId, username, password, balance);
             Log.clientLog(port, time, instance, accId, "Account created");
@@ -140,6 +165,14 @@ public class Client {
         System.out.println();
 
         try {
+            serverIF.checkIfServerIsAlive();
+        } catch (RemoteException e) {
+            Printer.boxPrinter("Server " + port + " is dead");
+            System.out.println("Requesting for another server...");
+            getServer();
+        }
+
+        try {
             Log.clientLog(port, time, instance, accId, "Login request");
             String credentials[] = serverIF.loginAccount(accId, password, time);
 
@@ -156,6 +189,14 @@ public class Client {
                     System.out.print("-> ");
                     int choice = sc.nextInt();
                     System.out.println();
+
+                    try {
+                        serverIF.checkIfServerIsAlive();
+                    } catch (RemoteException e) {
+                        Printer.boxPrinter("Server " + port + " is dead");
+                        System.out.println("Requesting for another server...");
+                        getServer();
+                    }
 
                     if (choice == 0) {
                         serverIF.notifyLogOut(accId);
@@ -195,6 +236,15 @@ public class Client {
         System.out.println("WITHDRAW");
         System.out.print("\nAmount -> ");
         double money = sc.nextDouble();
+
+        try {
+            serverIF.checkIfServerIsAlive();
+        } catch (RemoteException e) {
+            Printer.boxPrinter("Server " + port + " is dead");
+            System.out.println("Requesting for another server...");
+            getServer();
+        }
+
         try {
             if (money > account.getBalance())
                 System.out.println("Failed: Insufficient balance :(\n");
@@ -213,6 +263,15 @@ public class Client {
         System.out.println("DEPOSIT");
         System.out.print("\nAmount -> ");
         double money = sc.nextDouble();
+
+        try {
+            serverIF.checkIfServerIsAlive();
+        } catch (RemoteException e) {
+            Printer.boxPrinter("Server " + port + " is dead");
+            System.out.println("Requesting for another server...");
+            getServer();
+        }
+
         try {
             serverIF.deposit(account.getAccId(), money, false, time);
             account.setBalance(account.getBalance() + money);
@@ -229,6 +288,14 @@ public class Client {
         int receiverId = sc.nextInt();
         System.out.print("Amount -> ");
         double money = sc.nextDouble();
+
+        try {
+            serverIF.checkIfServerIsAlive();
+        } catch (RemoteException e) {
+            Printer.boxPrinter("Server " + port + " is dead");
+            System.out.println("Requesting for another server...");
+            getServer();
+        }
 
         try {
             if (receiverId == account.getAccId())
@@ -261,6 +328,15 @@ public class Client {
             System.out.print("Write DELETE to confirm -> ");
             String confirm = sc.nextLine();
             System.out.println();
+
+            try {
+                serverIF.checkIfServerIsAlive();
+            } catch (RemoteException e) {
+                Printer.boxPrinter("Server " + port + " is dead");
+                System.out.println("Requesting for another server...");
+                getServer();
+            }
+
             if (confirm.equals("DELETE")) {
                 Log.clientLog(port, time, instance, accId, "Account deletion request");
                 int status = serverIF.deleteAccount(accId, password, time);
