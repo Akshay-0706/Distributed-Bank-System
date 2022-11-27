@@ -74,7 +74,7 @@ public class ServerMaster extends UnicastRemoteObject implements ServerMasterIF 
                 int port = sc.nextInt();
                 while (port < 1 || port > 65535 || port == 2000 || port == 3000) {
                     System.out.println("This port no. is unavailable!");
-                    System.out.print("Reneter Port " + (i + 1) + ": ");
+                    System.out.print("Re-enter Port " + (i + 1) + ": ");
                     port = sc.nextInt();
                 }
                 System.out.print("Time " + (i + 1) + ": ");

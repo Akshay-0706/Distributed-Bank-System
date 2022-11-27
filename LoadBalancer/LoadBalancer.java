@@ -3,7 +3,9 @@ package LoadBalancer;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.TreeMap;
 
 import UI.Printer;
 
@@ -11,7 +13,7 @@ public class LoadBalancer extends UnicastRemoteObject implements LoadBalancerIF 
 
     private int current = 0;
     private int maxCapacity = 2;
-    private HashMap<Integer, Integer> servers;
+    private TreeMap<Integer, Integer> servers;
     private ArrayList<Integer> ports, activeAcc;
 
     public LoadBalancer() throws RemoteException {
@@ -19,14 +21,16 @@ public class LoadBalancer extends UnicastRemoteObject implements LoadBalancerIF 
     }
 
     @Override
-    public void setServers(ArrayList<Integer> ports, HashMap<Integer, Integer> servers) throws RemoteException {
+    public void setServers(ArrayList<Integer> ports, TreeMap<Integer, Integer> servers) throws RemoteException {
         this.ports = ports;
-        this.servers = servers;
+        this.servers = new TreeMap<Integer, Integer>(Comparator.reverseOrder());
+        this.servers.putAll(servers);
         activeAcc = new ArrayList<Integer>();
     }
 
     @Override
     public int requestServer() throws RemoteException {
+
         System.out.println("Checking for available servers...");
 
         while (servers.get(ports.get(current % ports.size())) == maxCapacity) {
@@ -47,7 +51,8 @@ public class LoadBalancer extends UnicastRemoteObject implements LoadBalancerIF 
 
     @Override
     public void freeServer(int port) throws RemoteException {
-        servers.put(port, servers.get(ports.get(current % ports.size())) - 1);
+        servers.put(port, servers.get(port) - 1);
+        current = ports.indexOf(port);
     }
 
     @Override

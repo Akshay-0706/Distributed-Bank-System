@@ -258,14 +258,14 @@ public class Server extends UnicastRemoteObject implements ServerIF {
         try {
             messagePrinter("Account creation request granted...", false);
 
-            String query = "insert into accounts values (" + accId + ", '" + username + "', '"
+            String query = "insert into accounts values (" + accId + ", '"
+                    + username + "', '"
                     + encoder(password)
                     + "', "
                     + balance + ");";
             statement.executeUpdate(query);
             Log.serverLog(port, this.time, instance, accId + ": Account created");
 
-            // messagePrinter("Account created successfully!");
             Printer.boxPrinter("Account created!");
             System.out.println();
         } catch (SQLException e) {
@@ -289,7 +289,8 @@ public class Server extends UnicastRemoteObject implements ServerIF {
             Log.serverLog(port, this.time, instance, accId + ": Login requested");
             messagePrinter("Account login request granted...", false);
 
-            String query = "select * from accounts where accId = '" + accId + "' and password = '" + encoder(password)
+            String query = "select * from accounts where accId = '" + accId
+                    + "' and password = '" + encoder(password)
                     + "' limit 1;";
             ResultSet resultSet = statement.executeQuery(query);
             // connection.close();
@@ -328,7 +329,8 @@ public class Server extends UnicastRemoteObject implements ServerIF {
             try {
                 messagePrinter("Account deletion request granted...", false);
 
-                String query = "delete from accounts where accId = " + accId + ";";
+                String query = "delete from accounts where accId = " + accId
+                        + ";";
                 statement.executeUpdate(query);
                 Log.serverLog(port, this.time, instance, accId + ": Account deleted");
                 // messagePrinter("Account deleted successfully!");
@@ -355,7 +357,8 @@ public class Server extends UnicastRemoteObject implements ServerIF {
         try {
             messagePrinter("Money withdraw request received...", false);
 
-            String query = "update accounts set balance = " + (getBalance(accId) - money) + " where accId = "
+            String query = "update accounts set balance = "
+                    + (getBalance(accId) - money) + " where accId = "
                     + accId + ";";
             statement.executeUpdate(query);
             if (!isToBeTransfered) {
@@ -384,7 +387,8 @@ public class Server extends UnicastRemoteObject implements ServerIF {
         }
         try {
             messagePrinter("Money deposit request received...", false);
-            String query = "update accounts set balance = " + (getBalance(accId) + money) + " where accId = "
+            String query = "update accounts set balance = "
+                    + (getBalance(accId) + money) + " where accId = "
                     + accId + ";";
             statement.executeUpdate(query);
             if (!isTransfered) {
@@ -399,7 +403,6 @@ public class Server extends UnicastRemoteObject implements ServerIF {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-
     }
 
     @Override
@@ -435,11 +438,12 @@ public class Server extends UnicastRemoteObject implements ServerIF {
         return instance;
     }
 
-    private double getBalance(int accId) {
+    @Override
+    public double getBalance(int accId) {
         double balance = -1;
         try {
-
-            String query = "select * from accounts where accId = " + accId + " limit 1;";
+            String query = "select * from accounts where accId = " + accId
+                    + " limit 1;";
             ResultSet resultSet = statement.executeQuery(query);
             // connection.close();
             if (resultSet.next()) {

@@ -1,21 +1,52 @@
 -- create database bank;
 -- use bank;
--- create table clients (
+-- create table accounts (
 --     accId int,
 --     name varchar(255),
 --     password varchar(255),
---     balance int
+--     balance int,
+--     primary key (accId)
 -- );
--- insert into clients
--- values (45634764, 'Akshay', 1234, 1000);
--- select *
--- from clients
--- where name = "Akshay" and password = "1234";
--- delete from clients where accId = 45634664;
--- alter table clients
--- modify balance double;
--- ALTER TABLE clients
--- modify balance varchar(255) not null;
--- describe clients;
--- delete from transactions;
-delete from accounts;
+-- create table replica (
+--     accId int,
+--     name varchar(255),
+--     password varchar(255),
+--     balance int,
+--     primary key (accId)
+-- );
+-- create table transactions (
+--     accId int,
+--     senderId int,
+--     receiverId int,
+--     mode varchar(8),
+--     amount int,
+--     date date,
+--     time time
+-- );
+-- drop table accounts;
+-- drop table replica;
+-- delimiter //
+-- Create Trigger after_insert
+-- After insert 
+-- on accounts for each on
+-- begin
+-- insert into replica values (new.accId, new.name, new.password, new.balance);
+-- end //
+-- delimiter ;
+-- delimiter //
+-- Create Trigger after_update
+-- After update 
+-- on accounts for each on
+-- begin
+-- update replica set balance = new.balance where accId = new.accId;
+-- end //
+-- delimiter ;
+-- delimiter //
+-- Create Trigger after_delete
+-- After delete 
+-- on accounts for each on
+-- begin
+-- delete from replica where accId = old.accId;
+-- end //
+-- delimiter ;
+-- drop Trigger after_insert;

@@ -27,6 +27,8 @@ public interface ServerIF extends Remote {
 
     public void getLeader(int leader) throws RemoteException;
 
+    public double getBalance(int accId) throws RemoteException;
+
     public void setTime(int newTime) throws RemoteException;
 
     public int getTime() throws RemoteException;

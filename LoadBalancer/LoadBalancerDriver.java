@@ -8,7 +8,12 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.TreeMap;
+
+import com.mysql.cj.x.protobuf.MysqlxCrud.Collection;
+
 import java.util.Scanner;
 
 import Server.ServerMaster;
@@ -33,7 +38,7 @@ public class LoadBalancerDriver {
             // beginning...
             createLoadBalancer();
             ArrayList<Integer> ports = new ArrayList<Integer>();
-            HashMap<Integer, Integer> servers = new HashMap<Integer, Integer>();
+            TreeMap<Integer, Integer> servers = new TreeMap<Integer, Integer>();
 
             for (int i = 0; i < args.length; i++) {
                 ports.add(Integer.parseInt(args[i]));
