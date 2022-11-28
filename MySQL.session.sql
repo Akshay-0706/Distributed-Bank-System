@@ -1,13 +1,13 @@
 -- create database bank;
 -- use bank;
--- create table accounts (
+-- create table AlphaAccount (
 --     accId int,
 --     name varchar(255),
 --     password varchar(255),
 --     balance int,
 --     primary key (accId)
 -- );
--- create table replica (
+-- create table BetaAccount (
 --     accId int,
 --     name varchar(255),
 --     password varchar(255),
@@ -23,8 +23,8 @@
 --     date date,
 --     time time
 -- );
--- drop table accounts;
--- drop table replica;
+drop table accounts;
+drop table replica;
 -- delimiter //
 -- Create Trigger after_insert
 -- After insert 
@@ -50,3 +50,5 @@
 -- end //
 -- delimiter ;
 -- drop Trigger after_insert;
+-- drop Trigger after_delete;
+-- drop Trigger after_update;
