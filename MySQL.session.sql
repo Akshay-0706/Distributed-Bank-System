@@ -23,8 +23,8 @@
 --     date date,
 --     time time
 -- );
-drop table accounts;
-drop table replica;
+-- drop table accounts;
+-- drop table replica;
 -- delimiter //
 -- Create Trigger after_insert
 -- After insert 
