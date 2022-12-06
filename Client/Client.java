@@ -182,6 +182,11 @@ public class Client {
                 loadBalancerIF.lockAccount(accId);
                 System.out.println("Welcome back Sir/Madam!");
                 while (true) {
+
+                    double newBalance = serverIF.getBalance(account.getAccId());
+
+                    account.setBalance(newBalance);
+
                     Printer.boxPrinter("Balance: " + account.getBalance());
                     System.out.println();
                     System.out.println(assistance[random.nextInt(assistance.length)]);

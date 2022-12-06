@@ -3,10 +3,10 @@ package LoadBalancer;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.TreeMap;
 
 public interface LoadBalancerIF extends Remote {
-    public void setServers(ArrayList<Integer> ports, HashMap<Integer, Integer> portsAreBusy) throws RemoteException;
+    public void setServers(ArrayList<Integer> ports, TreeMap<Integer, Integer> portsAreBusy) throws RemoteException;
 
     public int requestServer() throws RemoteException;
 
