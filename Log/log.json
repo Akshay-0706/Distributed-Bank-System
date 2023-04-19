@@ -1,23 +1,51 @@
 {
-    "1200": {
-        "1669702982709": {
-            "Server": {
-                "101": "Server is online"
-            },
-            "Client": {}
-        }
-    },
     "1000": {
         "1669702982709": {
-            "Server": {
-                "145": "Server is busy",
-                "312": "115286830: Account created",
-                "76": "Server is online"
-            },
             "Client": {
                 "115286830": {
                     "312": "Account created"
                 }
+            },
+            "Server": {
+                "76": "Server is online",
+                "145": "Server is busy",
+                "312": "115286830: Account created"
+            }
+        }
+    },
+    "1200": {
+        "1669702982709": {
+            "Client": {},
+            "Server": {
+                "101": "Server is online"
+            }
+        }
+    },
+    "2300": {
+        "1670314615605": {
+            "Client": {
+                "825185091": {
+                    "309": "Account created",
+                    "324": "Login request",
+                    "325": "Logged in",
+                    "336": "Logged out"
+                }
+            },
+            "Server": {
+                "42": "Server is online",
+                "107": "Server is busy",
+                "308": "825185091: Account created",
+                "324": "825185091: Login requested",
+                "335": "825185091: Logged out",
+                "338": "Server is free"
+            }
+        }
+    },
+    "2600": {
+        "1670314615605": {
+            "Client": {},
+            "Server": {
+                "101": "Server is online"
             }
         }
     }
