@@ -7,3 +7,9 @@
 ```
 java '@include.argfile' Server/ServerMaster
 ```
+
+3. Run Client
+
+```
+java '@include.argfile' Client/Client
+```
